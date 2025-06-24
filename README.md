@@ -1,5 +1,4 @@
-# node-curso
-
+# node-api-prueba
 To install dependencies:
 
 ```bash
