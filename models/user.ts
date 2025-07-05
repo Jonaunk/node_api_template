@@ -1,6 +1,6 @@
 import { email, minLength, object, pipe, string } from "valibot";
 import type { InferInput } from "valibot";
-import { hash } from "bcrypt";
+import { compare, hash } from "bcrypt";
 
 const emailSchema = pipe(string(), email());
 const passwordSchema = pipe(string(), minLength(6));
@@ -47,7 +47,7 @@ export const createUser = async (
     role: Role.USER,
   };
 
-  users.set(email, newUser);
+  users.set(email,  newUser); 
 
   return newUser;
 };
@@ -78,4 +78,28 @@ export const findUserByEmail = (email: string): User | undefined => {
  */
 
 
-export const validatePassword = async (user : User, password : string): Promise<boolean> => 
+export const validatePassword = async(
+  user : User, 
+  password : string
+): Promise<boolean> => {
+  return compare(password, user.password)
+ }
+
+
+ /**
+  * Revoke Token
+  * 
+  * @param {string} email - The email of th user to revoke the token.
+  * @return {boolean}
+  */
+
+ export const revokeUserToken = (email: string) : boolean => {
+  const foundUser = users.get(email);
+
+  if(!foundUser){
+    return false;
+  }
+
+  users.set(email, {...foundUser, refreshToken: undefined})
+  return true;
+ }
