@@ -5,7 +5,7 @@ import type { User } from "../models";
 /**
  * Middleware to authorize user roles for protected routes.
  *
- * @param {...string} roles - Allowed roles for the route.
+ * @param {...string[]} roles - Allowed roles for the route.
  * @returns {Function} Middleware function that checks if the user has one of the allowed roles.
  */
 export const authorizeRoles = (...roles: string[]) => {
