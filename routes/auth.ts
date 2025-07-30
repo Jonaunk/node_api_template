@@ -1,15 +1,19 @@
 import type { IncomingMessage, ServerResponse } from "http";
 import { parseBody } from "../utils/parseBody";
 import {
+  addRevokeToken,
   authSchema,
   createUser,
   findUserByEmail,
+  HttpMethod,
+  revokeUserToken,
   validatePassword,
 } from "../models";
 import { safeParse } from "valibot";
 import { sign } from "jsonwebtoken";
 import config from "../config";
-
+import { Http2ServerRequest } from "http2";
+import type { AuthenticatedRequest } from "../middleware/authentication";
 
 export const authRouter = async (req: IncomingMessage, res: ServerResponse) => {
   const { method, url } = req;
@@ -56,19 +60,47 @@ export const authRouter = async (req: IncomingMessage, res: ServerResponse) => {
     }
 
     const accessToken = sign(
-        {id: user.id, email: user.email, role: user.role},
-        config.jwtSecret,
-        { expiresIn: "1h" }
-    )
-    const refreshToken = sign(
-        {id: user.id},
-        config.jwtSecret,
-        { expiresIn: "1d" }
-    )
+      { id: user.id, email: user.email, role: user.role },
+      config.jwtSecret,
+      { expiresIn: "1h" }
+    );
+    const refreshToken = sign({ id: user.id }, config.jwtSecret, {
+      expiresIn: "1d",
+    });
 
     user.refreshToken = refreshToken;
 
-    res.end(JSON.stringify({accessToken, refreshToken}));
+    res.end(JSON.stringify({ accessToken, refreshToken }));
     return;
   }
+
+  if (url === "/auth/logout" && method === HttpMethod.POST) {
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (token) {
+      addRevokeToken(token);
+
+      const formattedReq = req as AuthenticatedRequest;
+      if (
+        formattedReq.user &&
+        typeof formattedReq.user === "object" &&
+        "id" in formattedReq.user
+      ) {
+        const result = revokeUserToken(formattedReq.user.mail);
+        if (!result) {
+          res.statusCode = 403;
+          res.end(JSON.stringify({ message: "Forbidden" }));
+        }
+      }
+
+      res.end(JSON.stringify({ message: "Logged out" }));
+      return;
+    }
+
+
+  }
+
+
+  res.statusCode = 404;
+  res.end(JSON.stringify({ message: "Not Found" }));
 };
