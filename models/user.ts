@@ -2,25 +2,43 @@ import { email, minLength, object, pipe, string } from "valibot";
 import type { InferInput } from "valibot";
 import { compare, hash } from "bcrypt";
 
+/**
+ * Schema for validating email addresses using valibot.
+ */
 const emailSchema = pipe(string(), email());
+/**
+ * Schema for validating passwords with a minimum length of 6 characters.
+ */
 const passwordSchema = pipe(string(), minLength(6));
 
+/**
+ * Authentication schema for users, requires valid email and password.
+ */
 export const authSchema = object({
   email: emailSchema,
   password: passwordSchema,
 });
 
+/**
+ * Enum for available user roles.
+ */
 export enum Role {
   "ADMIN" = "admin",
   "USER" = "user",
 }
 
+/**
+ * Type representing a user, based on the authentication schema with additional fields.
+ */
 export type User = InferInput<typeof authSchema> & {
   id: number;
   role: Role;
   refreshToken?: string;
 };
 
+/**
+ * Stores users in memory using a Map, where the key is the user's email.
+ */
 const users: Map<string, User> = new Map();
 
 /**
