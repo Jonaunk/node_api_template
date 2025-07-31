@@ -41,6 +41,11 @@ export const getCharacterById = (id: number): Character | undefined => {
  * @returns {Character} The added character with assigned id.
  */
 export const addCharacter = (character: Character): Character => {
+    if(!characters.has(character.id)){
+        return character;
+    }
+
+
     const newCharacter = {
         ...character, 
         id: new Date().getTime()
