@@ -17,8 +17,11 @@ import type { AuthenticatedRequest } from "../middleware/authentication";
 
 export const authRouter = async (req: IncomingMessage, res: ServerResponse) => {
   const { method, url } = req;
+console.log(url);
+console.log(method === HttpMethod.POST);
+  if (url === "/auth/register" && method === HttpMethod.POST) {
 
-  if (url === "/auth/register" && method === "HttpMethod.POST") {
+    console.log("entrando aca");
     const body = await parseBody(req);
     const result = safeParse(authSchema, body);
     if (result.issues) {
@@ -32,17 +35,19 @@ export const authRouter = async (req: IncomingMessage, res: ServerResponse) => {
     try {
       const user = await createUser(email, password);
       res.statusCode = 201;
-      res.end(JSON.stringify(user));
+      res.end(JSON.stringify({id: user.id, email: user.email}));
+      return;
     } catch (err) {
       if (err instanceof Error) {
         res.end(JSON.stringify({ message: err.message }));
       } else {
         res.end(JSON.stringify({ message: "Internal Server Error" }));
       }
+      return;
     }
   }
 
-  if (url === "/auth/login" && method === "HttpMethod.Post") {
+  if (url === "/auth/login" && method === HttpMethod.POST) {
     const body = await parseBody(req);
     const result = safeParse(authSchema, body);
     if (result.issues) {
@@ -99,7 +104,7 @@ export const authRouter = async (req: IncomingMessage, res: ServerResponse) => {
 
 
   }
-
+console.log('auth.register');
 
   res.statusCode = 404;
   res.end(JSON.stringify({ message: "Not Found" }));
