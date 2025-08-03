@@ -4,17 +4,19 @@ import {
   type AuthenticatedRequest,
 } from "../middleware/authentication";
 import {
-    addCharacter,
-    CharacterSchema,
+  addCharacter,
+  CharacterSchema,
+  deleteCharacter,
   getAllCharacters,
   getCharacterById,
   HttpMethod,
   Role,
+  updateCharacter,
   type Character,
 } from "../models";
 import { authorizeRoles } from "../middleware/authorization";
-import { message, safeParse } from "valibot";
 import { parseBody } from "../utils/parseBody";
+import { message, safeParse } from "valibot";
 
 export const characterRouter = async (
   req: IncomingMessage,
@@ -64,10 +66,10 @@ export const characterRouter = async (
     }
     const body = await parseBody(req);
     const result = safeParse(CharacterSchema, body);
-    if(result.issues){
-        res.statusCode = 400;
-        res.end(JSON.stringify({message: result.issues}))
-        return;
+    if (result.issues) {
+      res.statusCode = 400;
+      res.end(JSON.stringify({ message: result.issues }));
+      return;
     }
 
     const character: Character = body;
@@ -76,6 +78,49 @@ export const characterRouter = async (
     res.statusCode = 201;
     res.end(JSON.stringify(character));
     return;
-
   }
+
+  if (url?.startsWith("/characters") && method === HttpMethod.PATCH) {
+    if (!(await authorizeRoles(Role.ADMIN)(req as AuthenticatedRequest, res))) {
+      res.statusCode = 403;
+      res.end(JSON.stringify({ message: "Forbidden" }));
+      return;
+    }
+
+    const id = parseInt(url.split("/").pop() as string, 10);
+    const body = await parseBody(req);
+    const character: Character = body;
+    const updatedCharacter = updateCharacter(id, character);
+
+    if (!updatedCharacter) {
+      res.statusCode = 404;
+      res.end(JSON.stringify({ message: "Character not found" }));
+    } else {
+      res.statusCode = 200;
+      res.end(JSON.stringify(updatedCharacter));
+    }
+    return;
+  }
+
+  if (url?.startsWith("/characters") && method === HttpMethod.PATCH) {
+    if (!(await authorizeRoles(Role.ADMIN)(req as AuthenticatedRequest, res))) {
+      res.statusCode = 403;
+      res.end(JSON.stringify({ message: "Forbidden" }));
+      return;
+    }
+
+    const id = parseInt(url.split("/").pop() as string, 10);
+    const success = deleteCharacter(id);
+    if(!success){
+      res.statusCode = 404;
+      res.end(JSON.stringify({message : "Character not found"}))
+    }else{
+      res.statusCode = 204;
+      res.end(JSON.stringify({message : "Character deleted"}));
+    }
+    return;
+  }
+
+  res.statusCode = 404; 
+  res.end(JSON.stringify({message: "Endpoint not found"}))
 };
